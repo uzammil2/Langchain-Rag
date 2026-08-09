@@ -1,58 +1,140 @@
 # Book Assistant RAG Chatbot
 
- A Streamlit-based RAG chatbot for students that indexes uploaded PDFs and answers in a teacher-style tone using LangChain, OpenAI embeddings, Pinecone, ParentDocumentRetriever, MultiQueryRetriever, and an OpenAI chat model.
+A full-stack RAG (Retrieval-Augmented Generation) application designed to index PDF textbooks/documents and answer questions with source citations, featuring a FastAPI backend, Pinecone vector storage, and a Next.js modern web interface.
 
-## Flow
+---
 
-Ingestion flow: PDF -> PyPDFLoader -> TokenTextSplitter -> OpenAI Embeddings (text-embedding-3-small) -> Pinecone
+## 🚀 System Architecture & Flow
 
-Query flow: Streamlit UI -> PineconeVectorStore -> MultiQueryRetriever -> OpenAI Chat Model (gpt-4o-mini) -> Teacher-Style Answer
-
-The retrieval step is now wrapped in a LangChain `@tool`, and answer generation uses a small LCEL chain so the code stays simple while still being easy to extend into agents later.
-
-## Setup
-
-1. Create and activate the virtual environment.
-2. Install dependencies:
-
-```bash
-pip install -r requirements.txt
+### 1. Ingestion Flow
+```
+PDF Upload (Next.js Frontend)
+  └──> FastAPI Backend (`/api/documents/upload`)
+        └──> PyPDFLoader & TokenTextSplitter
+              └──> OpenAI Embeddings (`text-embedding-3-small`)
+                    └──> Pinecone Vector Store (Isolated Namespace per Document)
+                          └──> SQLite Database (Document Metadata & Active Status)
 ```
 
-3. Copy `.env.example` to `.env` and fill in your API keys.
-4. Run the app:
-
-```bash
-streamlit run app.py
+### 2. Query & Retrieval Flow
+```
+User Question & Conversation History (Next.js Frontend)
+  └──> FastAPI SSE Endpoint (`/api/chat`)
+        ├──> Condense Question Chain (incorporates conversation context)
+        ├──> Multi-Namespace Similarity Search (queries all active Pinecone namespaces)
+        ├──> Deduplication & Source Citation Formatting
+        ├──> LCEL Answer Chain (OpenAI `gpt-4o-mini` with teacher-style persona)
+        └──> Streaming SSE Tokens & Source Metadata back to Frontend
+              └──> Auto-persists Conversation & Messages in SQLite DB
 ```
 
-### One-time ingestion
+---
 
-Before deploying or after uploading a new PDF, run:
+## ✨ Features
 
-```bash
-python ingest.py --pdf /path/to/book.pdf
+- **Multi-Document Management**: Upload, toggle active state, or delete PDF documents directly from the UI. Retrieval is dynamically scoped to active documents.
+- **Real-time SSE Streaming**: Answers stream in real time token-by-token with formatted citations and source excerpts.
+- **Conversation Management**: Multi-chat support with automatic title generation, chat persistence, renaming, and deletion.
+- **Modern Next.js UI**: Clean interface built with Tailwind CSS, Lucide icons, Markdown rendering, and dynamic dark/light theme support.
+
+---
+
+## 🛠️ Project Structure
+
+```
+├── main.py              # FastAPI application & REST/SSE endpoints
+├── db.py                # SQLAlchemy Models & SQLite database initialization
+├── rag/                 # RAG pipeline modules (retrieval, vectorstore, chains)
+│   ├── chains.py        # LangChain LCEL prompt templates & answer chains
+│   ├── retriever.py     # PDF loading, splitting, and index construction
+│   └── vectorstore.py   # Pinecone index management & embeddings wrapper
+├── frontend/            # Next.js 16 frontend application
+│   ├── app/             # Next.js App Router pages & layout
+│   ├── components/      # React UI components (Sidebar, DocumentDrawer, Chat, etc.)
+│   └── lib/             # API client & theme providers
+├── ingest.py            # CLI script for manual document ingestion
+├── requirements.txt     # Python dependencies
+└── app.db               # SQLite database (auto-generated)
 ```
 
-If you already uploaded a PDF through the app, `python ingest.py` will reuse the latest PDF found in `uploads/`.
+---
 
-### Railway deployment
+## ⚡ Getting Started
 
-Add these variables in Railway instead of committing `.env`:
+### Prerequisites
+
+- Python 3.10+
+- Node.js 18+ and `npm`
+- OpenAI API Key
+- Pinecone API Key
+
+---
+
+### Backend Setup
+
+1. **Create and activate a Python virtual environment**:
+   ```bash
+   python -m venv .venv
+   # Windows:
+   .venv\Scripts\activate
+   # macOS/Linux:
+   source .venv/bin/activate
+   ```
+
+2. **Install Python dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Configure environment variables**:
+   Create a `.env` file in the root directory:
+   ```env
+   OPENAI_API_KEY=your_openai_api_key
+   PINECONE_API_KEY=your_pinecone_api_key
+   PINECONE_INDEX_NAME=book-assistant-index
+   PINECONE_CLOUD=aws
+   PINECONE_REGION=us-east-1
+   ALLOWED_ORIGINS=http://localhost:3000
+   ```
+
+4. **Start the FastAPI backend server**:
+   ```bash
+   uvicorn main:app --reload --port 8000
+   ```
+
+---
+
+### Frontend Setup
+
+1. **Navigate to the frontend directory**:
+   ```bash
+   cd frontend
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment variables** (optional if default `http://localhost:8000` is used):
+   Create `frontend/.env.local`:
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:8000
+   ```
+
+4. **Start the Next.js development server**:
+   ```bash
+   npm run dev
+   ```
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## 📜 CLI Ingestion (Optional)
+
+You can also ingest local PDF documents directly via command line:
 
 ```bash
-OPENAI_API_KEY=xxxxx
-PINECONE_API_KEY=xxxxx
-PINECONE_INDEX_NAME=book-assistant-index
-PINECONE_CLOUD=aws
-PINECONE_REGION=us-east-1
+python ingest.py --pdf /path/to/textbook.pdf
 ```
-
-The app uses `Procfile` to launch Streamlit on Railway.
-
-## Notes
-
-- The app creates a Pinecone index if it does not already exist.
-- Uploaded PDFs are stored locally in `uploads/` before parsing.
-- The PDF parser uses `PyPDFLoader`, so Tesseract is not required.
-- The answer prompt is tuned for clear, supportive, student-friendly explanations.

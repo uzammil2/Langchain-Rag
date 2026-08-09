@@ -1,46 +1,66 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════
+   NOTEBOOK LM DESIGN SYSTEM
+   Modern, flat, minimalist, Material Design 3 inspired.
+   ═══════════════════════════════════════════════════════ */
+
 @theme {
-  /* Brand / functional */
+  /* === Brand / Functional === */
   --color-black: #000000;
   --color-white: #ffffff;
-  --color-accent: #10a37f;
-  --color-danger: #f27474;
-  --color-warn: #fec553;
+  --color-accent: #0b57d0; /* Google blue */
+  --color-accent-light: #d3e3fd;
+  --color-accent-dark: #0842a0;
+  --color-danger: #b3261e;
+  --color-warn: #b3261e;
 
-  /* Neutrals (dark theme) */
-  --color-rail: #1e1f22;
-  --color-panel: #282a2e;
-  --color-border: #3f424a;
-  --color-muted-bg: #4b4f5b;
-  --color-text-muted: #858b9d;
-  --color-text-faint: #ababab;
-
-  /* Light-theme neutrals, kept for later if you add a toggle */
-  --color-mint: #d8efe9;
-  --color-light-border: #eaeaea;
-  --color-light-bg: #f4f4f4;
+  /* === Neutrals (Dark Theme by default) === */
+  --color-rail: #131314; /* App bg / sidebar */
+  --color-panel: #1e1f20; /* Main chat area */
+  --color-border: #444746;
+  --color-muted-bg: #282a2c;
+  --color-text-muted: #c4c7c5;
+  --color-text-faint: #8e918f;
+  
+  --color-surface: #1e1f20;
+  --color-surface-hover: #333537;
+  --color-surface-active: #a8c7fa;
+  --color-text-active: #041e49;
 }
 
+/* ── Light Theme ── */
 [data-theme="light"] {
-  --color-rail: #f0f2f5;
-  --color-panel: #ffffff;
-  --color-border: #d0d5dd;
-  --color-muted-bg: #e4e7ec;
-  --color-text-muted: #475467;
-  --color-text-faint: #667085;
-  /* In light mode, "white" means dark text-on-bg; accent buttons keep #fff via inline style on AI label */
-  --color-white: #101828;
-  --color-black: #f9fafb;
-  --color-danger: #d92d20;
-  --color-warn: #dc6803;
+  --color-rail: #ffffff; /* White sidebar */
+  --color-panel: #ffffff; /* Pure white for main area */
+  --color-border: #e2e8f0;
+  --color-muted-bg: #f8fafc;
+  --color-text-muted: #475569;
+  --color-text-faint: #94a3b8;
+  --color-white: #0f172a; /* Text color - very dark slate */
+  --color-black: #ffffff; /* Bg color */
+  
+  --color-surface: #f8fafc;
+  --color-surface-hover: #f1f5f9;
+  --color-surface-active: #dbeafe; /* Light blue active state */
+  --color-text-active: #1d4ed8; /* Blue text active state */
+  
+  --color-accent: #2563eb; /* Primary bright blue */
+  --color-accent-light: #eff6ff;
+  --color-accent-dark: #1e40af;
 }
+
+/* ═══════════════════════════════════════
+   BASE STYLES
+   ═══════════════════════════════════════ */
 
 html, body {
   background-color: var(--color-rail);
   color: var(--color-white);
   height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
   transition: background-color 0.15s ease, color 0.15s ease;
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
@@ -48,9 +68,222 @@ html, body {
   scrollbar-color: var(--color-border) transparent;
 }
 
-/* Typography scale from the UI kit */
-.text-h1 { font-weight: 700; font-size: 20px; line-height: 24px; }
-.text-sub1 { font-weight: 600; font-size: 14px; line-height: 20px; }
-.text-sub2 { font-weight: 600; font-size: 12px; line-height: 16px; }
-.text-body1 { font-weight: 400; font-size: 12px; line-height: 16px; }
-.text-label1 { font-weight: 400; font-size: 10px; line-height: 12px; }
+*::-webkit-scrollbar {
+  width: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-text-faint);
+  border-radius: 10px;
+}
+
+/* ═══════════════════════════════════════
+   TYPOGRAPHY
+   ═══════════════════════════════════════ */
+
+.text-h1 {
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.text-sub1 {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.text-sub2 {
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.text-body1 {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.text-label1 {
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.05em;
+}
+
+/* ═══════════════════════════════════════
+   UI COMPONENTS (NotebookLM Style)
+   ═══════════════════════════════════════ */
+
+/* Pill shaped primary button (Add Source) */
+.btn-pill-primary {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border: none;
+  border-radius: 100px;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2), 0 1px 2px rgba(37, 99, 235, 0.4);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-pill-primary:hover {
+  background-color: #1d4ed8 !important;
+  box-shadow: 0 3px 6px rgba(37, 99, 235, 0.3), 0 3px 6px rgba(37, 99, 235, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-pill-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2), 0 1px 2px rgba(37, 99, 235, 0.4);
+}
+
+/* Secondary icon buttons */
+.btn-icon {
+  background-color: transparent;
+  color: var(--color-text-muted);
+  border-radius: 50%;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-icon:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-white);
+}
+
+/* Flat rounded cards (Sources) */
+.card-source {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.card-source:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.card-source.active {
+  background-color: var(--color-surface-active);
+  border-color: transparent;
+  color: var(--color-text-active);
+}
+.card-source.active * {
+  color: var(--color-text-active) !important;
+}
+
+/* Chat Input Bar */
+.chat-input-bar {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 28px;
+  transition: all 0.2s ease;
+}
+
+.chat-input-bar:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+[data-theme="light"] .chat-input-bar {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+}
+[data-theme="light"] .chat-input-bar:focus-within {
+  background-color: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+/* Inline Citation Pill */
+.citation-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  min-width: 22px;
+  padding: 0 6px;
+  margin: 0 2px;
+  background-color: #eff6ff !important;
+  color: #2563eb !important;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  vertical-align: super;
+  transition: all 0.2s ease;
+  border: 1px solid #bfdbfe !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.citation-pill:hover {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+
+/* ═══════════════════════════════════════
+   CUSTOM CHECKBOX (MD3 Style)
+   ═══════════════════════════════════════ */
+
+.checkbox-md3 {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+  border: 2px solid var(--color-text-muted);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.checkbox-md3:checked {
+  background-color: var(--color-white);
+  border-color: var(--color-white);
+}
+
+[data-theme="light"] .checkbox-md3:checked {
+  background-color: var(--color-black);
+  border-color: var(--color-black);
+}
+
+.checkbox-md3:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 5px;
+  width: 5px;
+  height: 10px;
+  border: solid var(--color-black);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+[data-theme="light"] .checkbox-md3:checked::after {
+  border-color: var(--color-white);
+}
+
+/* ═══════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════ */
+
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-message-in {
+  animation: message-in 0.25s ease-out;
+}

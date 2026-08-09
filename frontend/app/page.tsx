@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import IconRail from "@/components/IconRail";
 import Sidebar from "@/components/Sidebar";
 import ChatPanel from "@/components/ChatPanel";
 import {
@@ -146,8 +145,8 @@ export default function Home() {
 
   return (
     <div className="relative flex h-screen w-full overflow-hidden bg-rail">
-      <div className="hidden lg:flex">
-        <IconRail />
+      {/* Desktop sidebar */}
+      <div className="hidden lg:flex shrink-0">
         <Sidebar
           documents={documents}
           loadingDocs={loadingDocs}
@@ -160,11 +159,14 @@ export default function Home() {
         />
       </div>
 
+      {/* Mobile drawer overlay */}
       {drawerOpen && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setDrawerOpen(false)} />
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setDrawerOpen(false)}
+          />
           <div className="relative z-10 flex h-full">
-            <IconRail />
             <Sidebar
               documents={documents}
               loadingDocs={loadingDocs}
@@ -180,6 +182,7 @@ export default function Home() {
         </div>
       )}
 
+      {/* Main chat area */}
       <ChatPanel
         activeConversationId={activeConversationId}
         activeConversationTitle={activeConversationTitle}

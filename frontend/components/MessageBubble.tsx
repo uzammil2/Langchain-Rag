@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, Copy, Check, Bookmark, Smile, Frown } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Check, ThumbsUp, ThumbsDown, Notebook } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { SourceCitation } from "@/lib/api";
@@ -11,23 +11,13 @@ function linkifyCitations(text: string): string {
   return text.replace(/\[(\d+)\]/g, (_m, num) => `[${num}](#cite-${num})`);
 }
 
-// Formats a citation as "<page>.<chunk>" e.g. page 1 / chunk 1 -> "1.1",
-// page 12 / chunk 1 -> "12.1", page 12 / chunk 2 -> "12.2".
-// Page numbers are shown as-is (start at 1), chunk numbers restart at 1 per page.
-// Using a separator (instead of concatenating digits) keeps the label short
-// and unambiguous even for double/triple-digit page numbers.
+// Formats a citation sequentially (e.g., 1, 2, 3)
 function buildCitationLabels(sources: SourceCitation[] | undefined): Map<number, string> {
   const map = new Map<number, string>();
-  const chunkCounterByPage = new Map<number, number>();
-
   (sources ?? []).forEach((s, i) => {
     const id = s.id ?? i + 1;
-    const page = Number(s.page ?? 1);
-    const chunk = (chunkCounterByPage.get(page) ?? 0) + 1;
-    chunkCounterByPage.set(page, chunk);
-    map.set(id, `${page}.${chunk}`);
+    map.set(id, String(i + 1));
   });
-
   return map;
 }
 
@@ -43,12 +33,7 @@ export default function MessageBubble({
   const { theme } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  // NOTE: The reaction (smile/frown) and bookmark states are local-only
-  // component states and cosmetic for this version of the app. They do not persist
-  // to the database, but maintain visual interactive states for the user.
   const [reaction, setReaction] = useState<"up" | "down" | null>(null);
-  const [bookmarked, setBookmarked] = useState(false);
   const sourceRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   const sourceById = useMemo(() => {
@@ -66,8 +51,10 @@ export default function MessageBubble({
     requestAnimationFrame(() => {
       const el = sourceRefs.current[id];
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
-      el?.classList.add("ring-2", "ring-accent");
-      setTimeout(() => el?.classList.remove("ring-2", "ring-accent"), 1200);
+      el?.classList.add("ring-2", "ring-accent", "bg-surface-active");
+      setTimeout(() => {
+        el?.classList.remove("ring-2", "ring-accent", "bg-surface-active");
+      }, 1500);
     });
   };
 
@@ -77,111 +64,108 @@ export default function MessageBubble({
     setTimeout(() => setCopied(false), 1500);
   };
 
+  /* ────────────────────────────
+     USER MESSAGE — Flat MD3 Bubble
+     ──────────────────────────── */
   if (role === "user") {
     return (
-      <div className="flex justify-end gap-3">
-        <div className="max-w-[85%] sm:max-w-[80%]">
-          <div className="mb-1 flex items-center justify-end gap-2 text-body1 text-text-faint">
-            <span className="text-sub2 text-white">You</span>
-          </div>
-          <div className="rounded-2xl rounded-tr-sm bg-white/10 px-4 py-3 text-body1 text-white">{content}</div>
+      <div className="flex justify-end gap-3 max-w-3xl ml-auto py-2">
+        <div 
+          className="rounded-3xl rounded-tr-md px-5 py-3 text-[15px] leading-relaxed shadow-sm"
+          style={{ 
+            backgroundColor: 'var(--color-surface-hover)', 
+            color: 'var(--color-white)' 
+          }}
+        >
+          {content}
         </div>
       </div>
     );
   }
 
+  /* ────────────────────────────
+     ASSISTANT MESSAGE — Flat Layout
+     ──────────────────────────── */
   return (
-    <div className="flex gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent">
-        <span className="text-sub2" style={{ color: "#ffffff" }}>AI</span>
+    <div className="flex gap-4 max-w-3xl py-4">
+      {/* AI Avatar */}
+      <div className="w-8 h-8 rounded-full bg-surface-hover flex items-center justify-center shrink-0 mt-1">
+        <Notebook size={16} className="text-accent" />
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="mb-1 text-sub2 text-white">Response</div>
-
-        <div className="rounded-2xl rounded-tl-sm bg-rail px-4 py-3 sm:px-5 sm:py-4">
-          <div className={`prose prose-sm max-w-none text-body1 leading-relaxed text-white ${theme === "dark" ? "prose-invert" : ""}`}>
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                a: ({ href, children }) => {
-                  const citeMatch = href?.match(/^#cite-(\d+)$/);
-                  if (citeMatch) {
-                    const id = Number(citeMatch[1]);
-                    const source = sourceById.get(id);
-                    const label = citationLabelById.get(id) ?? String(id);
-                    return (
-                      <button
-                        onClick={() => goToSource(id)}
-                        title={source ? `${source.source} — page ${source.page}` : "Source"}
-                        className="mx-0.5 inline-flex h-[18px] min-w-[24px] -translate-y-0.5 items-center justify-center rounded-md border border-accent/60 bg-accent px-1.5 align-super font-mono text-[10px] font-bold leading-none tracking-tight text-white shadow-sm transition hover:border-accent hover:bg-accent/90 hover:shadow"
-                      >
-                        {label}
-                      </button>
-                    );
-                  }
+        {/* Markdown content */}
+        <div className={`prose prose-sm max-w-none text-[15px] leading-relaxed text-white ${theme === "dark" ? "prose-invert" : ""}`}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              a: ({ href, children }) => {
+                const citeMatch = href?.match(/^#cite-(\d+)$/);
+                if (citeMatch) {
+                  const id = Number(citeMatch[1]);
+                  const source = sourceById.get(id);
+                  const label = citationLabelById.get(id) ?? String(id);
                   return (
-                    <a href={href} target="_blank" rel="noreferrer" className="text-accent underline">
-                      {children}
-                    </a>
+                    <button
+                      onClick={() => goToSource(id)}
+                      title={source ? `${source.source} — page ${source.page}` : "Source"}
+                      className="citation-pill"
+                    >
+                      {label}
+                    </button>
                   );
-                },
-              }}
-            >
-              {processedContent || "…"}
-            </ReactMarkdown>
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setReaction((r) => (r === "up" ? null : "up"))}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg transition ${reaction === "up" ? "bg-accent/20 text-accent" : "text-text-faint hover:bg-panel hover:text-white"
-                  }`}
-                title="Good response (cosmetic)"
-              >
-                <Smile size={17} />
-              </button>
-              <button
-                onClick={() => setReaction((r) => (r === "down" ? null : "down"))}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg transition ${reaction === "down" ? "bg-danger/20 text-danger" : "text-text-faint hover:bg-panel hover:text-white"
-                  }`}
-                title="Bad response (cosmetic)"
-              >
-                <Frown size={17} />
-              </button>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={copy}
-                className="flex h-9 items-center gap-1.5 rounded-lg bg-muted-bg px-3 text-body1 font-medium text-white transition hover:opacity-90"
-              >
-                {copied ? <Check size={14} /> : <Copy size={14} />}
-                {copied ? "Copied" : "Copy"}
-              </button>
-              <button
-                onClick={() => setBookmarked((b) => !b)}
-                className={`flex h-9 w-9 items-center justify-center rounded-lg transition ${bookmarked ? "bg-accent/20 text-accent" : "text-text-faint hover:bg-panel hover:text-white"
-                  }`}
-                title="Bookmark message (cosmetic — not persisted)"
-              >
-                <Bookmark size={16} />
-              </button>
-            </div>
-          </div>
+                }
+                return (
+                  <a href={href} target="_blank" rel="noreferrer" className="text-accent hover:underline">
+                    {children}
+                  </a>
+                );
+              },
+            }}
+          >
+            {processedContent || "…"}
+          </ReactMarkdown>
         </div>
 
+        {/* Action bar */}
+        <div className="mt-4 flex items-center gap-1 opacity-80 hover:opacity-100 transition-opacity">
+          <button
+            onClick={() => setReaction((r) => (r === "up" ? null : "up"))}
+            className={`btn-icon flex h-8 w-8 items-center justify-center ${reaction === 'up' ? 'text-accent' : ''}`}
+            title="Good response"
+          >
+            <ThumbsUp size={14} />
+          </button>
+          <button
+            onClick={() => setReaction((r) => (r === "down" ? null : "down"))}
+            className={`btn-icon flex h-8 w-8 items-center justify-center ${reaction === 'down' ? 'text-danger' : ''}`}
+            title="Bad response"
+          >
+            <ThumbsDown size={14} />
+          </button>
+          <div className="w-px h-4 bg-border mx-1" />
+          <button
+            onClick={copy}
+            className="btn-icon flex items-center gap-1.5 h-8 px-2"
+            title="Copy"
+          >
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+            {copied && <span className="text-xs font-medium">Copied</span>}
+          </button>
+        </div>
+
+        {/* ── Sources Accordion ── */}
         {sources && sources.length > 0 && (
-          <div className="mt-2">
+          <div className="mt-4">
             <button
               onClick={() => setExpanded((v) => !v)}
-              className="flex items-center gap-1.5 text-body1 text-text-faint transition hover:text-white"
+              className="flex items-center gap-1.5 text-sm font-medium text-text-muted hover:text-white transition-colors"
             >
-              {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-              Grounding Context Citations ({sources.length})
+              {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              {sources.length} {sources.length === 1 ? 'Source' : 'Sources'}
             </button>
             {expanded && (
-              <div className="mt-2 space-y-2">
+              <div className="mt-3 grid gap-2 grid-cols-1 sm:grid-cols-2">
                 {sources.map((s, i) => {
                   const id = s.id ?? i + 1;
                   const label = citationLabelById.get(id) ?? String(id);
@@ -191,15 +175,15 @@ export default function MessageBubble({
                       ref={(el) => {
                         sourceRefs.current[id] = el;
                       }}
-                      className="rounded-lg border border-border bg-rail p-3 text-body1 text-text-muted transition"
+                      className="border border-border rounded-xl p-3 bg-surface hover:bg-surface-hover transition-colors text-sm"
                     >
-                      <p className="mb-1 flex items-center gap-2 text-sub2 text-white">
-                        <span className="inline-flex h-[18px] min-w-[24px] items-center justify-center rounded-md border border-accent/60 bg-accent px-1.5 font-mono text-[10px] font-bold leading-none tracking-tight text-white">
-                          {label}
-                        </span>
-                        {s.source} (Page {s.page})
+                      <p className="mb-2 flex items-center gap-2 font-medium text-white">
+                        <span className="citation-pill !bg-border text-white !m-0">{label}</span>
+                        <span className="truncate">{s.source} (Page {s.page})</span>
                       </p>
-                      <p className="text-body1 italic text-text-faint">&ldquo;{s.excerpt}…&rdquo;</p>
+                      <p className="text-text-muted line-clamp-3">
+                        &ldquo;{s.excerpt}…&rdquo;
+                      </p>
                     </div>
                   );
                 })}
